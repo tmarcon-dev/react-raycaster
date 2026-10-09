@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `controls` prop to disable the built-in keyboard and mouse controls, to use the component as a renderer only ([#49](https://github.com/tmarcon-dev/react-raycaster/issues/49))
 - `openDoor(x, y)` documented in the game context
+- [Render only demo](https://tmarcon-dev.github.io/react-raycaster/render-only.html), with movements, collisions and a minimap handled by the parent component
 
 ### Changed
 

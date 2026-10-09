@@ -1,0 +1,68 @@
+.panel {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1;
+    width: 260px;
+    padding: 10px;
+    text-align: left;
+    font-size: 8px;
+    line-height: 1.6;
+    background: #2d2d2dcc;
+}
+
+.minimap {
+    position: relative;
+    display: grid;
+    width: 100%;
+    aspect-ratio: 1;
+    margin: 10px 0;
+    background: #1d1d1d;
+}
+
+.minimap .cell {
+    padding: 0;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+}
+
+.minimap .cell:hover:enabled {
+    background: #ffffff40;
+}
+
+.minimap .cell:disabled {
+    cursor: default;
+}
+
+.minimap .tile-1 { background: #555; }
+.minimap .tile-2 { background: #8a5a2b; }
+.minimap .tile-3,
+.minimap .tile-4 { background: #aaa; border-radius: 50%; }
+.minimap .tile-5 { background: #c49a4a; }
+
+/* Arrow pointing up at rotation 0, toward the first row */
+.minimap .player {
+    position: absolute;
+    width: 0;
+    height: 0;
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    border-bottom: 10px solid #e33;
+    pointer-events: none;
+}
+
+.panel pre {
+    font-family: inherit;
+    margin: 0;
+}
+
+@media (max-width: 900px) {
+    .panel {
+        width: 160px;
+    }
+
+    .panel p {
+        display: none;
+    }
+}

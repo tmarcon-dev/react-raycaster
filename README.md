@@ -118,6 +118,8 @@ setPlayer({ x: 5.5, y: 16, rotation: -80 })
 
 Positions outside the map, inside a wall or in an area not enclosed by walls are ignored with a console warning.
 
+See the [render only demo](https://tmarcon-dev.github.io/react-raycaster/render-only.html) and its [source](example/src/RenderOnly.tsx): movements, collisions and a clickable minimap are handled by the parent component.
+
 ## Props
 
 | Prop | Type | Default | Description |

@@ -4,50 +4,19 @@ import { useMemo, useState } from 'react';
 import { FaAdjust, FaRunning } from "react-icons/fa";
 import { FaArrowDown19 } from 'react-icons/fa6';
 
-import obsidian from "./assets/tex/obsidian.png"
 import oakPlanks from "./assets/tex/oak_planks.png"
-import barrel from "./assets/tex/barrel.png"
-import pillar from "./assets/tex/pillar.png"
-import wood from "./assets/tex/wood.png"
 import skybox from "./assets/tex/cubemap.png"
 
 import Raycaster from '../../src';
-import { PlayerType, Tiles } from '../../src/types/RaycastTypes';
+import { PlayerType } from '../../src/types/RaycastTypes';
 import { map } from './assets/map';
+import { tiles } from './assets/tiles';
 import { Joystick } from 'react-joystick-component';
 
 function App() {
   const [shading, setShading] = useState(true)
   const [bobbing, setBobbing] = useState(true)
   const [showFPS, setShowFPS] = useState(false)
-
-  const tiles = useMemo((): Tiles => ({
-    1: {
-      type: "wall",
-      src: obsidian,
-      collision: true,
-    },
-    2: {
-      type: "wall",
-      src: oakPlanks,
-      collision: true,
-    },
-    3: {
-      type: "sprite",
-      src: barrel,
-      collision: true,
-    },
-    4: {
-      type: "sprite",
-      src: pillar,
-      collision: true,
-    },
-    5: {
-      type: "door",
-      src: wood,
-      collision: true,
-    }
-  }), [])
 
   const player = useMemo((): PlayerType => ({
     x: 15,
@@ -141,7 +110,7 @@ function App() {
 
       <footer>
         <p>© 2024 <a href="https://thais-marcon.com">Thaïs Marcon</a></p>
-        <p>Github: <a href="https://github.com/tmarcon-dev/react-raycaster">react-raycaster</a></p>
+        <p>Github: <a href="https://github.com/tmarcon-dev/react-raycaster">react-raycaster</a> - <a href="render-only.html">Render only demo</a></p>
       </footer>
     </div>
   )

@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import { resolve } from 'path'
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -8,4 +9,12 @@ export default defineConfig({
   plugins: [react()],
   // The library source is imported from ../src, use a single copy of React
   resolve: { dedupe: ["react", "react-dom"] },
+  build: {
+    rolldownOptions: {
+      input: {
+        main: resolve(import.meta.dirname, "index.html"),
+        renderOnly: resolve(import.meta.dirname, "render-only.html"),
+      },
+    },
+  },
 })
