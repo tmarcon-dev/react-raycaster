@@ -1,10 +1,14 @@
-# Publishes the package to npm when a GitHub release is published
+# Stages the package on npm when a GitHub release is published
 # Uses npm trusted publishing (OIDC): no token is stored, provenance is generated automatically
 # https://docs.npmjs.com/trusted-publishers
+# The staged version must then be approved with 2FA: `npm stage approve <stage-id>` or on npmjs.com
+# https://docs.npmjs.com/staged-publishing
 name: Publish Package to npmjs
 on:
   release:
     types: [published]
+  # Retries a failed release from the selected branch or tag
+  workflow_dispatch:
 jobs:
   publish:
     runs-on: ubuntu-latest
@@ -18,10 +22,10 @@ jobs:
           node-version: '24.x'
           registry-url: 'https://registry.npmjs.org/'
           cache: npm
-      # Trusted publishing requires npm 11.5.1 or later
-      - run: npm install -g npm@^11.10.0
+      # Staged publishing requires npm 11.15.0 or later
+      - run: npm install -g npm@^11.15.0
       - run: npm ci
       - run: npm run lint
       - run: npm test
       - run: npm run build
-      - run: npm publish --access public
+      - run: npm stage publish

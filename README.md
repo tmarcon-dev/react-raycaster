@@ -179,6 +179,8 @@ npm run build   # Type check, bundle and type declarations
 
 Notable changes are listed in [CHANGELOG.md](CHANGELOG.md): each pull request adds its changes under `Unreleased`, which becomes the new version when releasing.
 
+Publishing a GitHub release stages the new version on npm, it goes live once approved with 2FA (`npm stage approve <stage-id>` or the Staged Packages tab on npmjs.com).
+
 The demo in `example/` uses the library sources directly:
 
 ```shell
