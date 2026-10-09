@@ -1,4 +1,6 @@
 # Publishes the package to npm when a GitHub release is published
+# Uses npm trusted publishing (OIDC): no token is stored, provenance is generated automatically
+# https://docs.npmjs.com/trusted-publishers
 name: Publish Package to npmjs
 on:
   release:
@@ -8,19 +10,18 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      id-token: write # Required for npm provenance
+      id-token: write # Required for trusted publishing
     steps:
       - uses: actions/checkout@v7
-      # Setup .npmrc file to publish to npm
       - uses: actions/setup-node@v7
         with:
           node-version: '24.x'
           registry-url: 'https://registry.npmjs.org/'
           cache: npm
+      # Trusted publishing requires npm 11.5.1 or later
+      - run: npm install -g npm@^11.10.0
       - run: npm ci
       - run: npm run lint
       - run: npm test
       - run: npm run build
-      - run: npm publish --provenance --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - run: npm publish --access public

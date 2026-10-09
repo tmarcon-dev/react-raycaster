@@ -141,7 +141,7 @@ function App() {
 
       <footer>
         <p>© 2024 <a href="https://thais-marcon.com">Thaïs Marcon</a></p>
-        <p>Github: <a href="https://github.com/kingdcreations/react-raycaster">react-raycaster</a></p>
+        <p>Github: <a href="https://github.com/tmarcon-dev/react-raycaster">react-raycaster</a></p>
       </footer>
     </div>
   )

@@ -6,9 +6,12 @@
   "description": "A fully customizable raycaster game engine as a React component.",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/kingdcreations/react-raycaster.git"
+    "url": "git+https://github.com/tmarcon-dev/react-raycaster.git"
   },
-  "homepage": "https://github.com/kingdcreations/react-raycaster#readme",
+  "homepage": "https://github.com/tmarcon-dev/react-raycaster#readme",
+  "bugs": {
+    "url": "https://github.com/tmarcon-dev/react-raycaster/issues"
+  },
   "license": "MIT",
   "type": "module",
   "main": "./dist/index.cjs",

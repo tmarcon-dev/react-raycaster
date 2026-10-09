@@ -1,11 +1,11 @@
-[![banner](https://github.com/kingdcreations/react-raycaster/blob/main/docs/thumbnail.png?raw=true)](https://thais-marcon.com/raycasting)
+[![banner](https://github.com/tmarcon-dev/react-raycaster/blob/main/docs/thumbnail.png?raw=true)](https://thais-marcon.com/raycasting)
 
 # React Raycaster (react-raycaster)
 [![NPM Version](https://img.shields.io/npm/v/react-raycaster)](https://www.npmjs.com/package/react-raycaster)
 
 A fully customizable raycaster game engine as a React component.
 
-Check out a cool example [here](https://thais-marcon.com/raycasting).
+Check out a cool example [here](https://thais-marcon.com/raycasting) or the [live demo of the latest version](https://tmarcon-dev.github.io/react-raycaster/).
 
 ## Installation
 
@@ -45,17 +45,17 @@ const map = [
 const tiles = {
   1: {
     type: "wall",
-    src: "https://raw.githubusercontent.com/kingdcreations/react-raycaster/main/example/src/assets/tex/oak_planks.png",
+    src: "https://raw.githubusercontent.com/tmarcon-dev/react-raycaster/main/example/src/assets/tex/oak_planks.png",
     collision: true,
   },
   2: {
     type: "sprite",
-    src: "https://raw.githubusercontent.com/kingdcreations/react-raycaster/main/example/src/assets/tex/barrel.png",
+    src: "https://raw.githubusercontent.com/tmarcon-dev/react-raycaster/main/example/src/assets/tex/barrel.png",
     collision: true,
   },
   3: {
     type: "door",
-    src: "https://raw.githubusercontent.com/kingdcreations/react-raycaster/main/example/src/assets/tex/wood.png",
+    src: "https://raw.githubusercontent.com/tmarcon-dev/react-raycaster/main/example/src/assets/tex/wood.png",
     collision: true,
   },
 }
@@ -194,7 +194,7 @@ Here is some useful links:
 - http://wolf3d.atw.hu/ (Original Wolfenstein 3D online)
 - https://lodev.org/cgtutor/raycasting.html (The main tutorial and code inspiration)
 - https://thais-marcon.com/raycasting/ (An example of this component in use online)
-- https://github.com/kingdcreations/cub3d (My 42 project in C)
+- https://github.com/tmarcon-dev/cub3d (My 42 project in C)
 
 ## License
 
