@@ -177,6 +177,8 @@ npm run lint
 npm run build   # Type check, bundle and type declarations
 ```
 
+Notable changes are listed in [CHANGELOG.md](CHANGELOG.md): each pull request adds its changes under `Unreleased`, which becomes the new version when releasing.
+
 The demo in `example/` uses the library sources directly:
 
 ```shell

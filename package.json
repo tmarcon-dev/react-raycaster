@@ -32,8 +32,7 @@
     "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.node.json",
     "lint": "eslint .",
     "test": "vitest run",
-    "test:watch": "vitest",
-    "release": "release-it"
+    "test:watch": "vitest"
   },
   "keywords": [
     "react",
