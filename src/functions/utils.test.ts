@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 import Game from "../classes/Game"
-import { isColliding } from "./utils"
+import { isColliding, shadePixel } from "./utils"
 
 describe("isColliding", () => {
     const map = [
@@ -29,4 +29,11 @@ describe("isColliding", () => {
         g.doors[1][3] = 1
         expect(isColliding(g, 1.5, 3.5)).toBe(true)
     })
+})
+
+describe("shadePixel", () => {
+    // Pixels are ABGR: 0xAABBGGRR
+    it("keeps the color at full light", () => expect(shadePixel(0x80406080, 1)).toBe(0xff406080))
+    it("darkens every channel", () => expect(shadePixel(0xff406080, 0.5)).toBe(0xff203040))
+    it("returns opaque black without light", () => expect(shadePixel(0xffffffff, 0)).toBe(0xff000000))
 })

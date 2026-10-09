@@ -60,7 +60,15 @@ export type SortedSprite = Sprite & {
 
 export type Doors = number[][]
 
-export type Textures = Map<number, HTMLImageElement>
+// Image with its pixels as 32 bits ABGR values (little-endian RGBA)
+export type Texture = {
+    image: HTMLImageElement,
+    pixels: Uint32Array,
+    width: number,
+    height: number,
+}
+
+export type Textures = Map<number, Texture>
 
 export interface CanvasType extends Omit<RaycastType, "map" | "tiles" | "player" | "width" | "height" | "children"> {
     g: Game,

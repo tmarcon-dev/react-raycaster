@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef } from "react";
-import { CanvasType, SortedSprite } from "../types/RaycastTypes";
-import { isColliding } from "../functions/utils";
+import { CanvasType, SortedSprite, Texture } from "../types/RaycastTypes";
+import { isColliding, loadTexture, shadePixel } from "../functions/utils";
 
 const DEFAULT_INPUTS = {
     north: "ArrowUp",
@@ -14,23 +14,6 @@ const DEFAULT_INPUTS = {
 const MOUSE_SENSITIVITY = 1 / 900
 // Pitch change in screen pixels per pixel of mouse movement
 const MOUSE_PITCH_SENSITIVITY = 0.25
-
-// Loads an image and returns its pixels, used for per-pixel floor/ceiling casting
-const loadImageData = (src: string, onLoad: (data: ImageData) => void) => {
-    const image = new Image();
-    image.onload = () => {
-        const c = document.createElement("canvas")
-        c.width = image.width
-        c.height = image.height
-        const cctx = c.getContext("2d")
-        if (!cctx) return
-        cctx.drawImage(image, 0, 0)
-        onLoad(cctx.getImageData(0, 0, image.width, image.height))
-    }
-    image.crossOrigin = "Anonymous";
-    image.src = src;
-    return image
-}
 
 export default function Canvas({
     g,
@@ -59,16 +42,25 @@ export default function Canvas({
     })
 
     const skyboxImage = useRef<HTMLImageElement | undefined>(undefined)
-    const ceilingTexData = useRef<ImageData | undefined>(undefined)
-    const floorTexData = useRef<ImageData | undefined>(undefined)
+    const ceilingTex = useRef<Texture | undefined>(undefined)
+    const floorTex = useRef<Texture | undefined>(undefined)
 
     // Main loop
     useEffect(() => {
-        const ctx = canvasRef.current?.getContext("2d", { willReadFrequently: true });
+        const ctx = canvasRef.current?.getContext("2d");
         if (!ctx) return
 
+        // Floor, ceiling and walls are written pixel by pixel in a buffer, then drawn over the skybox
+        const buffer = document.createElement("canvas")
+        const bctx = buffer.getContext("2d")
+        if (!bctx) return
+
         let id: ImageData | null = null
+        let d32 = new Uint32Array(0)
         let z = new Float64Array(0)
+        // Vertical span covered by the wall of each column, the floor is not computed behind it
+        let wallTop = new Int32Array(0)
+        let wallBottom = new Int32Array(0)
         let oTimestamp: DOMHighResTimeStamp | null = null;
         let bobbingState = 1;
         let frame = 0
@@ -80,12 +72,16 @@ export default function Canvas({
             // Buffers follow the canvas resolution
             if (!id || id.width !== w || id.height !== h) {
                 id = ctx.createImageData(w, h)
+                d32 = new Uint32Array(id.data.buffer)
+                buffer.width = w
+                buffer.height = h
                 z = new Float64Array(w)
+                wallTop = new Int32Array(w)
+                wallBottom = new Int32Array(w)
                 ctx.fillStyle = "red"
                 ctx.font = "24px Arial"
                 ctx.imageSmoothingEnabled = false;
             }
-            const d = id.data
 
             // Calculate the number of seconds passed since the last frame, capped to avoid jumps after a tab switch
             if (!oTimestamp) oTimestamp = timestamp
@@ -161,13 +157,18 @@ export default function Canvas({
             g.checkDoor()
             g.updateDoors(delta)
 
-            // Clear canvas
-            ctx.clearRect(0, 0, w, h)
-
             // Draw algorithms
-            floorcast(d, w, h, middle, shading);
-            skycast(w, h, middle);
-            raycast(w, h, middle, shading);
+            raycast(d32, w, h, middle, shading);
+            floorcast(d32, w, h, middle, shading);
+
+            ctx.clearRect(0, 0, w, h)
+            if (skyboxImage.current) {
+                skycast(skyboxImage.current, w, h, middle);
+                bctx.putImageData(id, 0, 0);
+                ctx.drawImage(buffer, 0, 0);
+            } else
+                ctx.putImageData(id, 0, 0);
+
             spritecast(w, h, middle);
 
             if (showFPS) ctx.fillText(fps.toString(), w / 50, h / 15 + 12);
@@ -176,10 +177,7 @@ export default function Canvas({
             frame = requestAnimationFrame(loop)
         }
 
-        const skycast = (w: number, h: number, middle: number) => {
-            const sky = skyboxImage.current
-            if (!sky) return
-
+        const skycast = (sky: HTMLImageElement, w: number, h: number, middle: number) => {
             const skyWidth = w * 4
             const angle = Math.atan2(g.dirY, g.dirX) / Math.PI + 1;
             const pan = Math.floor(angle * w * 2);
@@ -256,13 +254,13 @@ export default function Canvas({
                             let drawWidth = clipEndX - clipStartX;
                             if (drawWidth < 0) drawWidth = 0;
 
-                            ctx.drawImage(tex, drawStartX, 0, drawEndX, tex.height, clipStartX, drawStartY, drawWidth, spriteHeight);
+                            ctx.drawImage(tex.image, drawStartX, 0, drawEndX, tex.height, clipStartX, drawStartY, drawWidth, spriteHeight);
                         }
                     }
                 })
         }
 
-        const raycast = (w: number, h: number, middle: number, shading: boolean) => {
+        const raycast = (d32: Uint32Array, w: number, h: number, middle: number, shading: boolean) => {
             for (let x = 0; x < w; x++) {
 
                 // Calculate ray position and direction
@@ -389,34 +387,43 @@ export default function Canvas({
                 if (g.tiles[g.map[mapX][mapY]].type === "door")
                     wallX += g.doors[mapX][mapY];
 
+                // Visible part of the stripe
+                const yStart = Math.max(0, Math.floor(drawStart));
+                const yEnd = Math.min(h, Math.floor(drawStart + lineHeight));
+                const light = shading ? Math.max(0, 1 - (perpWallD * 0.020 + side / 10)) : 1;
+
                 if (texture) {
                     // x coordinate on the texture
-                    let texX = Math.floor(wallX * texture.width);
+                    let texX = Math.min(Math.floor(wallX * texture.width), texture.width - 1);
                     if (side == 0 && rayDirX > 0) texX = texture.width - texX - 1;
                     if (side == 1 && rayDirY < 0) texX = texture.width - texX - 1;
-                    ctx.drawImage(texture, texX, 0, 1, texture.height, x, drawStart, 1, lineHeight);
-                }
-                else {
-                    ctx.fillStyle = "black";
-                    ctx.fillRect(x, drawStart, 1, lineHeight);
-                }
 
-                if (shading) {
-                    const shade = perpWallD * 0.020 + side / 10;
-                    ctx.fillStyle = "rgba(0, 0, 0, " + shade + ")";
-                    ctx.fillRect(x, drawStart, 1, lineHeight);
+                    // How much to increase the texture coordinate per screen pixel
+                    const step = texture.height / lineHeight;
+                    let texPos = (yStart - drawStart) * step;
+
+                    for (let y = yStart; y < yEnd; y++) {
+                        const texY = Math.min(texPos | 0, texture.height - 1);
+                        texPos += step;
+                        const color = texture.pixels[texY * texture.width + texX];
+                        // Transparent texture pixels show the skybox
+                        d32[y * w + x] = color >>> 24 === 0 ? 0 : light === 1 ? color | 0xff000000 : shadePixel(color, light);
+                    }
+                } else {
+                    for (let y = yStart; y < yEnd; y++)
+                        d32[y * w + x] = 0xff000000;
                 }
 
                 // Set the zbuffer for the sprite casting
                 z[x] = perpWallD;
+                wallTop[x] = yStart;
+                wallBottom[x] = yEnd;
             }
-            ctx.fillStyle = "red"
         }
 
-        const floorcast = (d: Uint8ClampedArray, w: number, h: number, middle: number, shading: boolean) => {
-            const floorTex = floorTexData.current
-            const ceilingTex = ceilingTexData.current
-            if (!floorTex && !ceilingTex) return;
+        const floorcast = (d32: Uint32Array, w: number, h: number, middle: number, shading: boolean) => {
+            const floorTexture = floorTex.current
+            const ceilingTexture = ceilingTex.current
 
             // rayDir for leftmost ray (x = 0) and rightmost ray (x = w)
             const rayDirX0 = g.dirX - g.planeX;
@@ -427,14 +434,17 @@ export default function Canvas({
             for (let y = 0; y < h; y++) {
                 // Whether this section is floor or ceiling
                 const isFloor = y > middle + g.pitch;
-                const tex = isFloor ? floorTex : ceilingTex
+                const tex = isFloor ? floorTexture : ceilingTexture
 
                 // Current y position compared to the center of the screen (the horizon)
                 const p = Math.floor(isFloor ? (y - middle - g.pitch) : (middle - y + g.pitch));
 
-                // Rows without texture are left transparent so previous frames do not show through
+                const row = y * w
+
+                // Pixels without texture are transparent so previous frames do not show through
                 if (!tex || p <= 0) {
-                    d.fill(0, 4 * y * w, 4 * (y + 1) * w)
+                    for (let x = 0; x < w; ++x)
+                        if (y < wallTop[x] || y >= wallBottom[x]) d32[row + x] = 0;
                     continue
                 }
 
@@ -451,29 +461,26 @@ export default function Canvas({
                 let floorY = g.pY + rowDistance * rayDirY0;
 
                 const shade = (y - g.pitch) / h
-                const light = !shading ? 1 : isFloor ? shade : 1 - shade
+                const light = !shading ? 1 : Math.min(1, Math.max(0, isFloor ? shade : 1 - shade))
 
                 for (let x = 0; x < w; ++x) {
-                    const cellX = Math.floor(floorX);
-                    const cellY = Math.floor(floorY);
+                    if (y >= wallTop[x] && y < wallBottom[x]) {
+                        floorX += fstepX;
+                        floorY += fstepY;
+                        continue
+                    }
 
                     // Texture coordinates, any texture size is supported
-                    const tx = Math.min(Math.floor(tex.width * (floorX - cellX)), tex.width - 1);
-                    const ty = Math.min(Math.floor(tex.height * (floorY - cellY)), tex.height - 1);
+                    const tx = Math.min(Math.floor(tex.width * (floorX - Math.floor(floorX))), tex.width - 1);
+                    const ty = Math.min(Math.floor(tex.height * (floorY - Math.floor(floorY))), tex.height - 1);
 
-                    const tUv = 4 * (tex.width * ty + tx);
-                    const dataUV = 4 * (y * w + x);
-
-                    d[dataUV + 0] = tex.data[tUv + 0] * light;
-                    d[dataUV + 1] = tex.data[tUv + 1] * light;
-                    d[dataUV + 2] = tex.data[tUv + 2] * light;
-                    d[dataUV + 3] = 255;
+                    const color = tex.pixels[tex.width * ty + tx];
+                    d32[row + x] = light === 1 ? color | 0xff000000 : shadePixel(color, light);
 
                     floorX += fstepX;
                     floorY += fstepY;
                 }
             }
-            if (id) ctx.putImageData(id, 0, 0);
         }
 
         frame = requestAnimationFrame(loop);
@@ -515,19 +522,19 @@ export default function Canvas({
 
     // Ceiling initialization
     useEffect(() => {
-        ceilingTexData.current = undefined
+        ceilingTex.current = undefined
         if (!ceiling) return
 
-        const image = loadImageData(ceiling, data => ceilingTexData.current = data)
+        const image = loadTexture(ceiling, texture => ceilingTex.current = texture)
         return () => { image.onload = null }
     }, [ceiling])
 
     // Floor initialization
     useEffect(() => {
-        floorTexData.current = undefined
+        floorTex.current = undefined
         if (!floor) return
 
-        const image = loadImageData(floor, data => floorTexData.current = data)
+        const image = loadTexture(floor, texture => floorTex.current = texture)
         return () => { image.onload = null }
     }, [floor])
 

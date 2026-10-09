@@ -2,6 +2,7 @@ import { createContext, useEffect, useMemo, useRef, useState } from "react";
 import Game from "../classes/Game";
 import { PlayerType, RaycastType, Textures, Tiles } from "../types/RaycastTypes";
 import Canvas from "./Canvas";
+import { loadTexture } from "../functions/utils";
 
 const RaycasterContext = createContext<Game>(null!);
 
@@ -55,13 +56,8 @@ export default function Raycaster({
         const loaded: Textures = new Map()
         textures.current = loaded
 
-        const images = (JSON.parse(texturesKey) as [string, string][]).map(([id, src]) => {
-            const image = new Image();
-            image.onload = () => loaded.set(Number(id), image)
-            image.crossOrigin = "Anonymous";
-            image.src = src;
-            return image
-        })
+        const images = (JSON.parse(texturesKey) as [string, string][]).map(([id, src]) =>
+            loadTexture(src, texture => loaded.set(Number(id), texture)))
 
         return () => images.forEach(image => image.onload = null)
     }, [texturesKey])
