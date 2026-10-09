@@ -60,19 +60,11 @@ export type SortedSprite = Sprite & {
 
 export type Doors = number[][]
 
-export interface CanvasType extends CanvasHTMLAttributes<HTMLCanvasElement> {
+export type Textures = Map<number, HTMLImageElement>
+
+export interface CanvasType extends Omit<RaycastType, "map" | "tiles" | "player" | "width" | "height" | "children"> {
     g: Game,
     w: number,
     h: number,
-    shading?: boolean,
-    showFPS?: boolean,
-    bobbing?: boolean,
-    skybox?: string,
-    floor?: string,
-    ceiling?: string,
-    speed?: number,
-    rotSpeed?: number,
-    inputs?: Inputs,
-    textures?: HTMLImageElement[],
-    mouse?: boolean
+    textures: { current: Textures },
 }

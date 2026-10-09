@@ -113,7 +113,7 @@ import { Joystick } from 'react-joystick-component';
 | `skybox` | `string` | `none` | Source from the skybox to display |
 | `floor` | `string` | `none` | Source from the floor to display |
 | `ceiling` | `string` | `none` | Source from the ceiling to display |
-| `speed` | `number` | `20` | Sets movement speed |
+| `speed` | `number` | `10` | Sets movement speed |
 | `rotSpeed` | `number` | `3` | Sets the rotation speed |
 
 ## Game context
