@@ -12,17 +12,11 @@ export default defineConfig({
 	build: {
 		lib: {
 			entry: resolve(__dirname, "src/index.ts"),
-			name: "react-raycaster",
-			fileName: (format) => `index.${format}.js`,
+			formats: ["es", "cjs"],
+			fileName: (format) => format === "cjs" ? "index.cjs" : `index.${format}.js`,
 		},
 		rollupOptions: {
-			external: ["react", "react-dom"],
-			output: {
-				globals: {
-					react: "React",
-					"react-dom": "ReactDOM",
-				},
-			},
+			external: ["react", "react-dom", "react/jsx-runtime"],
 		},
 		sourcemap: true,
 		emptyOutDir: true,

@@ -484,9 +484,6 @@ export default function Canvas({
 
     // Main loop initialization
     useEffect(() => {
-        if (process.env.NODE_ENV === "development")
-            console.log("useEffect Loop");
-
         frame.current = requestAnimationFrame(loop);
         return () => cancelAnimationFrame(frame.current);
     }, [loop]);
@@ -552,9 +549,6 @@ export default function Canvas({
 
     // Handle inputs events
     useEffect(() => {
-        if (process.env.NODE_ENV === "development")
-            console.log("useEffect Inputs");
-
         const onKeyDown = (e: KeyboardEvent) => {
             if (inputs.north === e.code) g.up = speed
             else if (inputs.east === e.code) g.right = speed
