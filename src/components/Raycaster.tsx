@@ -31,7 +31,7 @@ export default function Raycaster({
     const texturesKey = useMemo(() => JSON.stringify(Object.entries(tiles)
         .map(([id, t]) => [id, t.src])), [tiles])
 
-    // A new game is only created when the map or tiles change, player and resolution are initial values
+    // A new game is only created when the map or tiles change, player and resolution changes are applied to the current game
     const gameKey = mapKey + tilesKey
     const [current, setCurrent] = useState(() => ({
         key: gameKey,
@@ -43,6 +43,11 @@ export default function Raycaster({
         game = createGame(mapKey, tiles, player, width, height)
         setCurrent({ key: gameKey, game })
     }
+
+    // Changing the player position or rotation moves the player without resetting the game
+    useEffect(() => {
+        game?.setPlayer({ x: player.x, y: player.y, rotation: player.rotation })
+    }, [game, player.x, player.y, player.rotation])
 
     // Resolution changes keep the current game state
     useEffect(() => {

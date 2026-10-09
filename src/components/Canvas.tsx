@@ -30,6 +30,7 @@ export default function Canvas({
     rotSpeed = 3,
     textures,
     mouse = false,
+    controls = true,
     style,
     ...canvasProps
 }: CanvasType) {
@@ -490,7 +491,7 @@ export default function Canvas({
     // Mouse camera
     useEffect(() => {
         const canvas = canvasRef.current
-        if (!mouse || !canvas) return
+        if (!mouse || !controls || !canvas) return
 
         // Movements are accumulated until the next frame consumes them
         const moveCamera = (e: MouseEvent) => {
@@ -506,7 +507,7 @@ export default function Canvas({
             canvas.removeEventListener("mousemove", moveCamera)
             canvas.removeEventListener("click", pointerLock);
         }
-    }, [g, mouse])
+    }, [g, mouse, controls])
 
     // Skybox initialization
     useEffect(() => {
@@ -540,6 +541,8 @@ export default function Canvas({
 
     // Handle inputs events
     useEffect(() => {
+        if (!controls) return
+
         const onKeyDown = (e: KeyboardEvent) => {
             const { inputs, speed, rotSpeed } = props.current
             if (inputs.north === e.code) g.up = speed
@@ -580,8 +583,9 @@ export default function Canvas({
             removeEventListener('keydown', onKeyDown)
             removeEventListener('keyup', onKeyUp)
             removeEventListener('blur', onBlur)
+            onBlur()
         }
-    }, [g])
+    }, [g, controls])
 
     return (
         <canvas
@@ -590,7 +594,7 @@ export default function Canvas({
             height={h}
             ref={canvasRef}
             style={{
-                cursor: mouse ? "pointer" : undefined,
+                cursor: mouse && controls ? "pointer" : undefined,
                 imageRendering: "pixelated",
                 ...style,
             }} />

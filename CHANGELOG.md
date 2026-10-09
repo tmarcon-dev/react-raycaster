@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `controls` prop to disable the built-in keyboard and mouse controls, to use the component as a renderer only ([#49](https://github.com/tmarcon-dev/react-raycaster/issues/49))
+- `openDoor(x, y)` documented in the game context
+
+### Changed
+
+- Changing the `player` values moves and rotates the player, without resetting the game
+
 ## [0.2.0] - 2026-10-09
 
 ### Added

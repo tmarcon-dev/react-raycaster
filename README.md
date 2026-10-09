@@ -98,15 +98,36 @@ import { Joystick } from 'react-joystick-component';
 </Raycaster>
 ```
 
+### Rendering only
+
+To handle movements, collisions and inputs yourself, disable the built-in controls and pass the player state: the component renders it every time it changes.
+
+```jsx
+const [player, setPlayer] = useState({ x: 5, y: 17, rotation: -90 })
+
+// Move the player from your own logic
+setPlayer({ x: 5.5, y: 16, rotation: -80 })
+
+<Raycaster
+  map={map}
+  tiles={tiles}
+  player={player}
+  controls={false}
+/>
+```
+
+Positions outside the map, inside a wall or in an area not enclosed by walls are ignored with a console warning.
+
 ## Props
 
 | Prop | Type | Default | Description |
 |---|---|---|---|
 | `map`| `number[][]` | **required** | 2D map array containing tiles |
 | `tiles`| `Tiles` | **required** | Map tiles definition (See below) |
-| `player`| `Player` | **required** | Player initial values |
+| `player`| `Player` | **required** | Player position and rotation, changing its values moves the player |
+| `controls`| `boolean` | `true` | Enables the built-in keyboard and mouse controls |
 | `mouse`| `boolean` | `false` | Allows mouse camera rotation |
-| `inputs` | `Inputs` | (See below) | Sets the rotation speed |
+| `inputs` | `Inputs` | (See below) | Keyboard controls |
 | `width` | `number` | `500` | Game x resolution in pixels |
 | `height` | `number` | `300` | Game y resulition in pixels |
 | `shading` | `boolean` | `true` | Allows depth shading |
@@ -124,6 +145,7 @@ import { Joystick } from 'react-joystick-component';
 |---|---|
 | `joystickMove(x: number, y: number)` | Changes player x and y position on the map |
 | `joystickCamera(x: number)` | Rotates camera / player view |
+| `openDoor(x: number, y: number)` | Opens the door at the given map position |
 
 ## Types
 
@@ -147,7 +169,7 @@ import { Joystick } from 'react-joystick-component';
 |---|---|---|---|
 | `x`| `number` | **required** | Player x value on map |
 | `y`| `number` | **required** | Player y value on map |
-| `rotation`| `number` | `0` | Player rotation in degree |
+| `rotation`| `number` | `0` | Player rotation in degree, `0` looks toward the first row of the map, `90` toward the last column |
 
 ### Inputs
 

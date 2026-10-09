@@ -43,6 +43,7 @@ export interface RaycastType extends Omit<CanvasHTMLAttributes<HTMLCanvasElement
     rotSpeed?: number,
     inputs?: Inputs,
     mouse?: boolean,
+    controls?: boolean,
     children?: (value: Game) => ReactNode
 }
 

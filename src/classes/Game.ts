@@ -13,17 +13,17 @@ export default class Game {
         this.map = map
         this.tiles = tiles
 
+        this.reachable = map.map(row => row.map(() => false))
         this.checkMap(player.x, player.y)
 
         this.pX = player.x + .5
         this.pY = player.y + .5
 
-        const rotation = -(player.rotation ?? 0) * Math.PI / 180
-        this.dirX = -Math.cos(rotation);
-        this.dirY = -Math.sin(rotation);
-
+        this.dirX = -1
+        this.dirY = 0
         this.planeX = 0
         this.planeY = 0
+        this.setRotation(player.rotation ?? 0)
         this.setResolution(w, h)
 
         this.doors = map.map(row => row.map(() => 0));
@@ -46,6 +46,41 @@ export default class Game {
         this.cameraL = x * this.rotSpeed
     }
 
+    // Moves the player, used to control the player from outside the component
+    // Positions outside of the map or in an area not enclosed by walls are ignored, as rays could not hit a wall
+    setPlayer = (player: PlayerType) => {
+        const x = Math.floor(player.x + .5)
+        const y = Math.floor(player.y + .5)
+
+        if (!this.reachable[x]?.[y]) {
+            try {
+                this.checkMap(x, y)
+            } catch (e) {
+                console.warn(`Ignoring player position [${player.x}, ${player.y}]:`, e instanceof Error ? e.message : e)
+                return
+            }
+            // Walls are never reachable
+            if (!this.reachable[x][y]) {
+                console.warn(`Ignoring player position [${player.x}, ${player.y}]: inside a wall`)
+                return
+            }
+        }
+
+        this.pX = player.x + .5
+        this.pY = player.y + .5
+        this.setRotation(player.rotation ?? 0)
+    }
+
+    // Rotation in degrees, 0 looks toward the first row of the map
+    setRotation = (degrees: number) => {
+        const rotation = -degrees * Math.PI / 180
+        const planeLength = Math.hypot(this.planeX, this.planeY)
+        this.dirX = -Math.cos(rotation);
+        this.dirY = -Math.sin(rotation);
+        this.planeX = this.dirY * planeLength
+        this.planeY = -this.dirX * planeLength
+    }
+
     // Camera plane is kept perpendicular to the direction, its length sets the field of view
     setResolution = (w: number, h: number) => {
         const planeLength = (w / 2) / h
@@ -53,9 +88,11 @@ export default class Game {
         this.planeY = -this.dirX * planeLength
     }
 
-    // Iterative flood fill from the player position: every reachable cell must be enclosed by colliding walls
+    // Iterative flood fill from a position: every reachable cell must be enclosed by colliding walls
+    // Validated cells are remembered so the player can be moved to them without checking again
     checkMap = (startX: number, startY: number) => {
         const visited = this.map.map(row => row.map(() => false))
+        const inside: [number, number][] = []
         const stack: [number, number][] = [[startX, startY]]
 
         while (stack.length) {
@@ -76,8 +113,11 @@ export default class Game {
                     continue
             }
 
+            inside.push([x, y])
             stack.push([x - 1, y], [x + 1, y], [x, y - 1], [x, y + 1])
         }
+
+        inside.forEach(([x, y]) => this.reachable[x][y] = true)
     }
 
     getMapType = (x: number, y: number) => {
@@ -135,6 +175,9 @@ export default class Game {
 
     map: number[][]
     tiles: Tiles
+
+    // Cells validated by checkMap
+    reachable: boolean[][]
 
     doors: Doors
     doorStates: DoorState[][]
