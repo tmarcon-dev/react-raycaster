@@ -1,9 +1,17 @@
-import { createContext, useEffect, useMemo, useRef } from "react";
+import { createContext, useEffect, useMemo, useRef, useState } from "react";
 import Game from "../classes/Game";
-import { RaycastType, Textures } from "../types/RaycastTypes";
+import { PlayerType, RaycastType, Textures, Tiles } from "../types/RaycastTypes";
 import Canvas from "./Canvas";
 
 const RaycasterContext = createContext<Game>(null!);
+
+const createGame = (mapKey: string, tiles: Tiles, player: PlayerType, width: number, height: number) => {
+    try {
+        return new Game(JSON.parse(mapKey), tiles, player, width, height)
+    } catch (e) {
+        console.error(e)
+    }
+}
 
 export default function Raycaster({
     map,
@@ -15,10 +23,6 @@ export default function Raycaster({
     ...props
 }: RaycastType) {
 
-    // Player and resolution are only read when the game is (re)created
-    const initial = useRef({ tiles, player, width, height })
-    initial.current = { tiles, player, width, height }
-
     // Compare map and tiles by content so inline props do not reset the game on every render
     const mapKey = useMemo(() => JSON.stringify(map), [map])
     const tilesKey = useMemo(() => JSON.stringify(Object.entries(tiles)
@@ -26,17 +30,18 @@ export default function Raycaster({
     const texturesKey = useMemo(() => JSON.stringify(Object.entries(tiles)
         .map(([id, t]) => [id, t.src])), [tiles])
 
-    // Initialize game object
-    const game = useMemo(() => {
-        const { tiles, player, width, height } = initial.current
-        try {
-            return new Game(JSON.parse(mapKey), tiles, player, width, height)
-        } catch (e) {
-            return console.error(e)
-        }
-    // tilesKey triggers a new game when tiles types or collisions change
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [mapKey, tilesKey])
+    // A new game is only created when the map or tiles change, player and resolution are initial values
+    const gameKey = mapKey + tilesKey
+    const [current, setCurrent] = useState(() => ({
+        key: gameKey,
+        game: createGame(mapKey, tiles, player, width, height),
+    }))
+
+    let game = current.game
+    if (current.key !== gameKey) {
+        game = createGame(mapKey, tiles, player, width, height)
+        setCurrent({ key: gameKey, game })
+    }
 
     // Resolution changes keep the current game state
     useEffect(() => {

@@ -5,4 +5,6 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   base: "/raycasting/",
   plugins: [react()],
+  // The library source is imported from ../src, use a single copy of React
+  resolve: { dedupe: ["react", "react-dom"] },
 })

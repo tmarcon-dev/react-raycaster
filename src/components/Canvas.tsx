@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef } from "react";
 import { CanvasType, SortedSprite } from "../types/RaycastTypes";
 import { isColliding } from "../functions/utils";
 
@@ -54,11 +54,13 @@ export default function Canvas({
 
     // Latest props, read by the game loop and event handlers without restarting them
     const props = useRef({ inputs, shading, showFPS, bobbing, w, h, speed, rotSpeed })
-    props.current = { inputs, shading, showFPS, bobbing, w, h, speed, rotSpeed }
+    useLayoutEffect(() => {
+        props.current = { inputs, shading, showFPS, bobbing, w, h, speed, rotSpeed }
+    })
 
-    const skyboxImage = useRef<HTMLImageElement>()
-    const ceilingTexData = useRef<ImageData>()
-    const floorTexData = useRef<ImageData>()
+    const skyboxImage = useRef<HTMLImageElement | undefined>(undefined)
+    const ceilingTexData = useRef<ImageData | undefined>(undefined)
+    const floorTexData = useRef<ImageData | undefined>(undefined)
 
     // Main loop
     useEffect(() => {

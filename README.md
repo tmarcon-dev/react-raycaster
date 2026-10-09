@@ -19,6 +19,8 @@ or
 yarn add react-raycaster
 ```
 
+Requires React 18 or 19.
+
 ## How to use
 
 ```jsx
@@ -85,11 +87,11 @@ import { Joystick } from 'react-joystick-component';
   {g =>
     <>
       <Joystick
-        move={(e) => e.x && e.y && g.joystickMove(e.x, e.y)}
+        move={(e) => g.joystickMove(e.x ?? 0, e.y ?? 0)}
         stop={() => g.joystickMove(0, 0)} />
 
       <Joystick
-        move={(e) => {e.x && e.y && g.joystickCamera(e.x)}}
+        move={(e) => g.joystickCamera(e.x ?? 0)}
         stop={() => g.joystickCamera(0)} />
     </>
   }
@@ -165,6 +167,23 @@ import { Joystick } from 'react-joystick-component';
 - Add more tile types
 - Add moving sprites
 - Add different walls height
+
+## Development
+
+```shell
+npm install
+npm test        # Unit tests (Vitest)
+npm run lint
+npm run build   # Type check, bundle and type declarations
+```
+
+The demo in `example/` uses the library sources directly:
+
+```shell
+cd example
+npm install
+npm run dev
+```
 
 ## About
 
