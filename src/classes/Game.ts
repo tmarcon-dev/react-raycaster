@@ -1,122 +1,149 @@
-import { Doors, Tiles, PlayerType } from "../types/RaycastTypes"
+import { Doors, Tiles, PlayerType, Sprite } from "../types/RaycastTypes"
 import MapError from "./MapError"
+
+// Door opening/closing speed (fraction of the door per second)
+const DOOR_SPEED = 1.5
+// Time a door stays open before closing, in seconds
+const DOOR_OPEN_TIME = 3
+
+type DoorState = "closed" | "opening" | "open" | "closing"
 
 export default class Game {
     constructor(map: number[][], tiles: Tiles, player: PlayerType, w: number, h: number) {
         this.map = map
         this.tiles = tiles
 
-        this.checkMap(JSON.parse(JSON.stringify(map)), player.x, player.y)
+        this.checkMap(player.x, player.y)
 
         this.pX = player.x + .5
         this.pY = player.y + .5
 
-        this.dirX = -1;
-        this.dirY = 0;
+        const rotation = -(player.rotation ?? 0) * Math.PI / 180
+        this.dirX = -Math.cos(rotation);
+        this.dirY = -Math.sin(rotation);
 
-        this.planeX = 0;
-        this.planeY = (w / 2) / h
+        this.planeX = 0
+        this.planeY = 0
+        this.setResolution(w, h)
 
-        if (player.rotation) {
-            this.dirX = -Math.cos(-player.rotation * Math.PI / 180);
-            this.dirY = -Math.sin(-player.rotation * Math.PI / 180);
+        this.doors = map.map(row => row.map(() => 0));
+        this.doorStates = map.map(row => row.map((): DoorState => "closed"));
+        this.doorTimers = map.map(row => row.map(() => 0));
 
-            this.planeX = -this.planeY * Math.sin(-player.rotation * Math.PI / 180);
-            this.planeY = this.planeY * Math.cos(-player.rotation * Math.PI / 180);
-        }
-
-        this.doors = Array.from(Array(map.length), () => Array(map[0].length).fill(0));
+        this.sprites = []
+        map.forEach((row, x) => row.forEach((tile, y) => {
+            if (tiles[tile]?.type === "sprite")
+                this.sprites.push({ x: x + 0.5, y: y + 0.5, tile })
+        }))
     }
 
     joystickMove = (x: number, y: number) => {
-        this.up = y * 10
-        this.right = x * 10
+        this.up = y * this.speed
+        this.right = x * this.speed
     }
 
     joystickCamera = (x: number) => {
-        this.cameraL = x * 5
+        this.cameraL = x * this.rotSpeed
     }
 
-    checkMap = (m: number[][], x: number, y: number) => {
-        if (x < 0 || y < 0 || x > m.length - 1 || y > m[x].length - 1)
-            throw new MapError("Player initial position has to be in an enclosed map");
+    // Camera plane is kept perpendicular to the direction, its length sets the field of view
+    setResolution = (w: number, h: number) => {
+        const planeLength = (w / 2) / h
+        this.planeX = this.dirY * planeLength
+        this.planeY = -this.dirX * planeLength
+    }
 
-        if (m[x][y] !== 0 && this.tiles[m[x][y]].type === "wall" && this.tiles[m[x][y]].collision)
-            return;
+    // Iterative flood fill from the player position: every reachable cell must be enclosed by colliding walls
+    checkMap = (startX: number, startY: number) => {
+        const visited = this.map.map(row => row.map(() => false))
+        const stack: [number, number][] = [[startX, startY]]
 
-        m[x][y] = 1;
+        while (stack.length) {
+            const [x, y] = stack.pop()!
 
-        //Fill Prev row
-        this.checkMap(m, x - 1, y);
-        //Fill Next row
-        this.checkMap(m, x + 1, y);
-        //Fill Prev col
-        this.checkMap(m, x, y - 1);
-        //Fill next col
-        this.checkMap(m, x, y + 1);
+            if (x < 0 || y < 0 || x > this.map.length - 1 || y > this.map[x].length - 1)
+                throw new MapError("Player initial position has to be in an enclosed map");
+
+            if (visited[x][y]) continue
+            visited[x][y] = true
+
+            const id = this.map[x][y]
+            if (id !== 0) {
+                const tile = this.tiles[id]
+                if (!tile)
+                    throw new MapError(`Tile ${id} at [${x}, ${y}] is not defined in tiles`);
+                if (tile.type === "wall" && tile.collision)
+                    continue
+            }
+
+            stack.push([x - 1, y], [x + 1, y], [x, y - 1], [x, y + 1])
+        }
     }
 
     getMapType = (x: number, y: number) => {
-        if (this.tiles[this.map[x][y]])
+        if (this.tiles[this.map[x]?.[y]])
             return this.tiles[this.map[x][y]].type
         else return null
     }
 
     checkDoor = () => {
-        if (this.action) {
-            const checkMapX = Math.floor(this.pX + this.dirX);
-            const checkMapY = Math.floor(this.pY + this.dirY);
+        if (!this.action) return
 
-            const checkMapX2 = Math.floor(this.pX + this.dirX * 2);
-            const checkMapY2 = Math.floor(this.pY + this.dirY * 2);
+        const cells = [
+            [Math.floor(this.pX + this.dirX), Math.floor(this.pY + this.dirY)],
+            [Math.floor(this.pX + this.dirX * 2), Math.floor(this.pY + this.dirY * 2)],
+            [Math.floor(this.pX), Math.floor(this.pY)],
+        ]
 
-            if (this.getMapType(checkMapX, checkMapY) === "door" && this.doors[checkMapX][checkMapY] === 0)
-                this.openDoor(checkMapX, checkMapY)
-
-            if (this.getMapType(checkMapX2, checkMapY2) === "door" && this.doors[checkMapX2][checkMapY2] === 0)
-                this.openDoor(checkMapX2, checkMapY2)
-
-            if (this.getMapType(Math.floor(this.pX), Math.floor(this.pY)) === "door")
-                this.openDoor(Math.floor(this.pX), Math.floor(this.pY))
-        }
+        cells.forEach(([x, y]) => {
+            if (this.getMapType(x, y) === "door") this.openDoor(x, y)
+        })
     }
 
     openDoor = (x: number, y: number) => {
-        let timer = 0;
-        let state = "opening"
-
-        const loop = setInterval(() => {
-            if (this.doors[x][y] < 1 && state === "opening")
-                this.doors[x][y] += 0.025
-            else {
-                timer++;
-                state = "open"
-                this.doors[x][y] = 1
-
-                if (timer >= 60 * 3 && this.getMapType(Math.floor(this.pX), Math.floor(this.pY)) !== "door") {
-                    clearInterval(loop)
-                    state = "closing"
-                    this.closeDoor(x, y)
-                }
-            }
-        }, 1000 / 60)
+        const state = this.doorStates[x][y]
+        if (state === "closed" || state === "closing")
+            this.doorStates[x][y] = "opening"
+        else if (state === "open")
+            this.doorTimers[x][y] = 0
     }
 
-    closeDoor = (x: number, y: number) => {
-        const loop = setInterval(() => {
-            if (this.doors[x][y] > 0)
-                this.doors[x][y] -= 0.025
-            else {
-                this.doors[x][y] = 0
-                clearInterval(loop)
+    // Animates doors, called once per frame with the elapsed time in seconds
+    updateDoors = (delta: number) => {
+        const playerX = Math.floor(this.pX)
+        const playerY = Math.floor(this.pY)
+
+        this.doorStates.forEach((row, x) => row.forEach((state, y) => {
+            if (state === "opening") {
+                this.doors[x][y] = Math.min(1, this.doors[x][y] + DOOR_SPEED * delta)
+                if (this.doors[x][y] === 1) {
+                    this.doorStates[x][y] = "open"
+                    this.doorTimers[x][y] = 0
+                }
+            } else if (state === "open") {
+                this.doorTimers[x][y] += delta
+                // Never close a door on the player
+                if (this.doorTimers[x][y] >= DOOR_OPEN_TIME && (x !== playerX || y !== playerY))
+                    this.doorStates[x][y] = "closing"
+            } else if (state === "closing") {
+                this.doors[x][y] = Math.max(0, this.doors[x][y] - DOOR_SPEED * delta)
+                if (this.doors[x][y] === 0)
+                    this.doorStates[x][y] = "closed"
             }
-        }, 1000 / 60)
+        }))
     }
 
     map: number[][]
     tiles: Tiles
 
     doors: Doors
+    doorStates: DoorState[][]
+    doorTimers: number[][]
+
+    sprites: Sprite[]
+
+    speed = 10
+    rotSpeed = 3
 
     up = 0
     left = 0

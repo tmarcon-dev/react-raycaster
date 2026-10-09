@@ -8,10 +8,10 @@
       "DOM.Iterable"
     ],
     "module": "ESNext",
+    "types": [],
     "skipLibCheck": true,
     /* Bundler mode */
     "moduleResolution": "bundler",
-    "allowImportingTsExtensions": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
@@ -20,12 +20,9 @@
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "noFallthroughCasesInSwitch": true,
-    "typeRoots": ["./dist/index.d.ts", "node_modules/@types"]
+    "noFallthroughCasesInSwitch": true
   },
   "include": [
-    "src",
-    "./index.ts"
-  ],
-  "references": [{ "path": "./tsconfig.node.json" }]
+    "src"
+  ]
 }

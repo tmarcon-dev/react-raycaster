@@ -1,9 +1,18 @@
-import { createContext, useEffect, useMemo, useState } from "react";
+import { createContext, useEffect, useMemo, useRef, useState } from "react";
 import Game from "../classes/Game";
-import { RaycastType } from "../types/RaycastTypes";
+import { PlayerType, RaycastType, Textures, Tiles } from "../types/RaycastTypes";
 import Canvas from "./Canvas";
+import { loadTexture } from "../functions/utils";
 
 const RaycasterContext = createContext<Game>(null!);
+
+const createGame = (mapKey: string, tiles: Tiles, player: PlayerType, width: number, height: number) => {
+    try {
+        return new Game(JSON.parse(mapKey), tiles, player, width, height)
+    } catch (e) {
+        console.error(e)
+    }
+}
 
 export default function Raycaster({
     map,
@@ -15,33 +24,43 @@ export default function Raycaster({
     ...props
 }: RaycastType) {
 
-    // Initialize game object
-    const game = useMemo(() => {
-        try {
-            return new Game(map, tiles, player, width, height)
-        } catch (e) {
-            return console.error(e)
-        }
-    }, [map, tiles, player, width, height])
+    // Compare map and tiles by content so inline props do not reset the game on every render
+    const mapKey = useMemo(() => JSON.stringify(map), [map])
+    const tilesKey = useMemo(() => JSON.stringify(Object.entries(tiles)
+        .map(([id, t]) => [id, t.type, !!t.collision])), [tiles])
+    const texturesKey = useMemo(() => JSON.stringify(Object.entries(tiles)
+        .map(([id, t]) => [id, t.src])), [tiles])
 
-    const [textures, setTextures] = useState<HTMLImageElement[]>()
+    // A new game is only created when the map or tiles change, player and resolution are initial values
+    const gameKey = mapKey + tilesKey
+    const [current, setCurrent] = useState(() => ({
+        key: gameKey,
+        game: createGame(mapKey, tiles, player, width, height),
+    }))
 
-    // Tiles initialization
+    let game = current.game
+    if (current.key !== gameKey) {
+        game = createGame(mapKey, tiles, player, width, height)
+        setCurrent({ key: gameKey, game })
+    }
+
+    // Resolution changes keep the current game state
     useEffect(() => {
-        if (tiles) {
-            const tilesArray = Object.values(tiles)
-            const imgArr = new Array(tilesArray.length);
-            tilesArray.forEach((o, i) => {
-                const image = new Image();
-                imgArr[i] = null
-                image.onload = () => imgArr[i] = image
-                image.crossOrigin = "Anonymous";
-                image.src = o.src;
-            })
+        game?.setResolution(width, height)
+    }, [game, width, height])
 
-            setTextures(imgArr)
-        }
-    }, [tiles])
+    // Tiles textures, indexed by tile id
+    const textures = useRef<Textures>(new Map())
+
+    useEffect(() => {
+        const loaded: Textures = new Map()
+        textures.current = loaded
+
+        const images = (JSON.parse(texturesKey) as [string, string][]).map(([id, src]) =>
+            loadTexture(src, texture => loaded.set(Number(id), texture)))
+
+        return () => images.forEach(image => image.onload = null)
+    }, [texturesKey])
 
     if (!game) return null
 

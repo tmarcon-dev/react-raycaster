@@ -91,14 +91,14 @@ function App() {
               size={100}
               baseColor="grey"
               stickColor="lightgrey"
-              move={(e) => e.x && e.y && g.joystickMove(e.x, e.y)}
+              move={(e) => g.joystickMove(e.x ?? 0, e.y ?? 0)}
               stop={() => g.joystickMove(0, 0)} />
 
             <Joystick
               size={100}
               baseColor="grey"
               stickColor="lightgrey"
-              move={(e) => {e.x && e.y && g.joystickCamera(e.x)}}
+              move={(e) => g.joystickCamera(e.x ?? 0)}
               stop={() => g.joystickCamera(0)} />
           </div>
         }
@@ -141,7 +141,7 @@ function App() {
 
       <footer>
         <p>© 2024 <a href="https://thais-marcon.com">Thaïs Marcon</a></p>
-        <p>Github: <a href="https://github.com/kingdcreations/react-raycaster">react-raycaster</a></p>
+        <p>Github: <a href="https://github.com/tmarcon-dev/react-raycaster">react-raycaster</a></p>
       </footer>
     </div>
   )

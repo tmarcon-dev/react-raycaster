@@ -1,11 +1,11 @@
-[![banner](https://github.com/kingdcreations/react-raycaster/blob/main/docs/thumbnail.png?raw=true)](https://thais-marcon.com/raycasting)
+[![banner](https://github.com/tmarcon-dev/react-raycaster/blob/main/docs/thumbnail.png?raw=true)](https://thais-marcon.com/raycasting)
 
 # React Raycaster (react-raycaster)
 [![NPM Version](https://img.shields.io/npm/v/react-raycaster)](https://www.npmjs.com/package/react-raycaster)
 
 A fully customizable raycaster game engine as a React component.
 
-Check out a cool example [here](https://thais-marcon.com/raycasting).
+Check out a cool example [here](https://thais-marcon.com/raycasting) or the [live demo of the latest version](https://tmarcon-dev.github.io/react-raycaster/).
 
 ## Installation
 
@@ -18,6 +18,8 @@ or
 ```shell
 yarn add react-raycaster
 ```
+
+Requires React 18 or 19.
 
 ## How to use
 
@@ -43,17 +45,17 @@ const map = [
 const tiles = {
   1: {
     type: "wall",
-    src: "https://raw.githubusercontent.com/kingdcreations/react-raycaster/main/example/src/assets/tex/oak_planks.png",
+    src: "https://raw.githubusercontent.com/tmarcon-dev/react-raycaster/main/example/src/assets/tex/oak_planks.png",
     collision: true,
   },
   2: {
     type: "sprite",
-    src: "https://raw.githubusercontent.com/kingdcreations/react-raycaster/main/example/src/assets/tex/barrel.png",
+    src: "https://raw.githubusercontent.com/tmarcon-dev/react-raycaster/main/example/src/assets/tex/barrel.png",
     collision: true,
   },
   3: {
     type: "door",
-    src: "https://raw.githubusercontent.com/kingdcreations/react-raycaster/main/example/src/assets/tex/wood.png",
+    src: "https://raw.githubusercontent.com/tmarcon-dev/react-raycaster/main/example/src/assets/tex/wood.png",
     collision: true,
   },
 }
@@ -85,11 +87,11 @@ import { Joystick } from 'react-joystick-component';
   {g =>
     <>
       <Joystick
-        move={(e) => e.x && e.y && g.joystickMove(e.x, e.y)}
+        move={(e) => g.joystickMove(e.x ?? 0, e.y ?? 0)}
         stop={() => g.joystickMove(0, 0)} />
 
       <Joystick
-        move={(e) => {e.x && e.y && g.joystickCamera(e.x)}}
+        move={(e) => g.joystickCamera(e.x ?? 0)}
         stop={() => g.joystickCamera(0)} />
     </>
   }
@@ -113,7 +115,7 @@ import { Joystick } from 'react-joystick-component';
 | `skybox` | `string` | `none` | Source from the skybox to display |
 | `floor` | `string` | `none` | Source from the floor to display |
 | `ceiling` | `string` | `none` | Source from the ceiling to display |
-| `speed` | `number` | `20` | Sets movement speed |
+| `speed` | `number` | `10` | Sets movement speed |
 | `rotSpeed` | `number` | `3` | Sets the rotation speed |
 
 ## Game context
@@ -166,6 +168,25 @@ import { Joystick } from 'react-joystick-component';
 - Add moving sprites
 - Add different walls height
 
+## Development
+
+```shell
+npm install
+npm test        # Unit tests (Vitest)
+npm run lint
+npm run build   # Type check, bundle and type declarations
+```
+
+Notable changes are listed in [CHANGELOG.md](CHANGELOG.md): each pull request adds its changes under `Unreleased`, which becomes the new version when releasing.
+
+The demo in `example/` uses the library sources directly:
+
+```shell
+cd example
+npm install
+npm run dev
+```
+
 ## About
 
 I discovered raycasting as a project from 42 in C, this project is inspired by the world-famous Wolfenstein3D game, which was the first FPS ever.
@@ -175,7 +196,7 @@ Here is some useful links:
 - http://wolf3d.atw.hu/ (Original Wolfenstein 3D online)
 - https://lodev.org/cgtutor/raycasting.html (The main tutorial and code inspiration)
 - https://thais-marcon.com/raycasting/ (An example of this component in use online)
-- https://github.com/kingdcreations/cub3d (My 42 project in C)
+- https://github.com/tmarcon-dev/cub3d (My 42 project in C)
 
 ## License
 
