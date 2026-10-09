@@ -1,6 +1,6 @@
 {
   "name": "react-raycaster",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "private": false,
   "author": "Thais Marcon <mthais.web@gmail.com> (https://thais-marcon.com/)",
   "description": "A fully customizable raycaster game engine as a React component.",
