@@ -37,3 +37,43 @@ export const shadePixel = (color: number, light: number) =>
         (((color >>> 16) & 0xff) * light) << 16 |
         (((color >>> 8) & 0xff) * light) << 8 |
         ((color & 0xff) * light)) >>> 0
+
+// Average color of the opaque pixels of a texture, as a CSS color
+export const averageColor = (texture: Texture) => {
+    let r = 0, g = 0, b = 0, count = 0
+    for (const pixel of texture.pixels) {
+        if (pixel >>> 24 < 128) continue
+        r += pixel & 0xff
+        g += (pixel >>> 8) & 0xff
+        b += (pixel >>> 16) & 0xff
+        count++
+    }
+    if (!count) return undefined
+    return `rgb(${Math.round(r / count)}, ${Math.round(g / count)}, ${Math.round(b / count)})`
+}
+
+// Locks the pointer for mouse camera controls, with raw mouse input when the browser supports it:
+// with mouse acceleration, Chrome on Windows reports sudden large movements that make the camera jump
+export const lockPointer = (element: Element) =>
+    element.requestPointerLock({ unadjustedMovement: true })
+        ?.catch(() => element.requestPointerLock())
+        .catch(() => { })
+
+// Input types that are activated with Space or Enter, other keys can still control the game while they are focused
+const BUTTON_INPUTS = ["button", "checkbox", "color", "file", "image", "radio", "reset", "submit"]
+
+// Whether a key event belongs to the focused element of the page rather than to the game:
+// any key in text fields, selects and editable content, Space and Enter on buttons, links and checkboxes
+export const isFormKey = (e: Pick<KeyboardEvent, "code" | "target">) => {
+    const el = e.target as HTMLElement | null
+    if (!el?.tagName) return false
+    if (el.isContentEditable) return true
+
+    const tag = el.tagName.toLowerCase()
+    const activation = e.code === "Space" || e.code === "Enter" || e.code === "NumpadEnter"
+
+    if (tag === "textarea" || tag === "select") return true
+    if (tag === "input") return !BUTTON_INPUTS.includes((el as HTMLInputElement).type) || activation
+    if (tag === "button" || tag === "summary" || (tag === "a" && el.hasAttribute("href"))) return activation
+    return false
+}

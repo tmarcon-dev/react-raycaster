@@ -25,19 +25,125 @@ canvas {
     transform: translate(-50%, -50%);
 }
 
-form {
-    position: fixed;
-    display: block;
-    text-align: left;
-    padding: 10px;
+/* Width of the rendered view, the canvas content is contained in a 5:3 box */
+:root {
+    --view-width: min(100vw, 1000px, 100vh * 5 / 3);
 }
 
-form div {
+/* Cover the rendered view */
+.view-overlay,
+.joystick-container {
+    position: fixed;
+    top: calc(50vh - var(--view-width) * 3 / 10);
+    left: 50%;
+    z-index: 2;
+    box-sizing: border-box;
+    width: var(--view-width);
+    height: calc(var(--view-width) * 3 / 5);
+    transform: translateX(-50%);
+    /* Clicks on the view go through to the canvas to lock the pointer */
+    pointer-events: none;
+}
+
+/* Controls help and minimap */
+.view-overlay {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.hint {
+    box-sizing: border-box;
+    width: 100%;
+    margin: 0;
+    padding: 6px 10px;
+    font-size: 12px;
+    line-height: 1.6;
+    background: #0000008c;
+}
+
+.hint .touch {
+    display: none;
+}
+
+@media (hover: none) and (pointer: coarse) {
+    .hint .keyboard {
+        display: none;
+    }
+
+    .hint .touch {
+        display: inline;
+    }
+}
+
+/* Settings toggles and player position, in the top left corner of the page */
+.panel {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1;
+    padding: 10px;
+    text-align: left;
+    font-size: 8px;
+    line-height: 1.6;
+}
+
+.panel form div {
     padding: 5px;
 }
 
-form input {
+.panel form input {
     margin-left: 15px;
+}
+
+.panel pre {
+    font-family: inherit;
+    margin: 0;
+    padding: 5px;
+}
+
+/* Top left corner of the view, below the help, not centered over the page like the view canvas */
+.minimap {
+    position: static;
+    width: max(90px, 15%);
+    margin: 10px;
+    transform: none;
+    opacity: .8;
+    pointer-events: auto;
+}
+
+/* Leaves room for the joysticks below */
+@media (hover: none) and (pointer: coarse) {
+    .minimap {
+        width: 70px;
+    }
+}
+
+/* Above the view */
+.description {
+    position: fixed;
+    top: 0;
+    left: 50%;
+    box-sizing: border-box;
+    width: var(--view-width);
+    margin: 0;
+    padding: 10px;
+    transform: translateX(-50%);
+    font-size: 8px;
+    line-height: 1.6;
+    opacity: .7;
+}
+
+/* Below the view on portrait screens, toggles in a row */
+@media (max-width: 900px) and (orientation: portrait) {
+    .panel {
+        top: calc(50vh + var(--view-width) * 3 / 10);
+    }
+
+    .panel form {
+        display: flex;
+        flex-wrap: wrap;
+    }
 }
 
 footer {
@@ -47,18 +153,18 @@ footer {
     font-size: 10px;
 }
 
+/* In the bottom corners of the view, below the minimap */
 .joystick-container {
     overflow: hidden;
-    position: absolute;
     opacity: .20;
-    top: 0;
-    bottom: 0;
-    left: 0;
-    right: 0;
     padding: 10px;
     display: flex;
-    align-items: center;
+    align-items: flex-end;
     justify-content: space-between;
+}
+
+.joystick-container > * {
+    pointer-events: auto;
 }
 
 @media (min-device-width: 1366px) {

@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest"
+import { describe, expect, it, vi } from "vitest"
 import Game from "./Game"
 import MapError from "./MapError"
 import { Tiles } from "../types/RaycastTypes"
@@ -67,6 +67,68 @@ describe("camera", () => {
     })
 })
 
+describe("setPlayer", () => {
+    // An enclosed room [1..2] x [1..3], and a second room [4..5] x [1..3] open on the right side
+    const rooms = () => [
+        [1, 1, 1, 1, 1],
+        [1, 0, 0, 0, 1],
+        [1, 0, 0, 0, 1],
+        [1, 1, 1, 1, 1],
+        [1, 0, 0, 0, 1],
+        [1, 0, 0, 0, 0],
+        [1, 1, 1, 1, 1],
+    ]
+
+    const quiet = () => vi.spyOn(console, "warn").mockImplementation(() => { })
+
+    it("moves and rotates the player", () => {
+        const g = new Game(rooms(), tiles, { x: 1, y: 1 }, 500, 300)
+        g.setPlayer({ x: 2.25, y: 3, rotation: 90 })
+        expect(g.pX).toBe(2.75)
+        expect(g.pY).toBe(3.5)
+        expect(g.dirX).toBeCloseTo(0)
+        expect(g.dirY).toBeCloseTo(1)
+    })
+
+    it("keeps the field of view and the camera plane perpendicular", () => {
+        const g = new Game(rooms(), tiles, { x: 1, y: 1 }, 500, 300)
+        g.setPlayer({ x: 1, y: 2, rotation: 123 })
+        expect(Math.hypot(g.planeX, g.planeY)).toBeCloseTo(250 / 300)
+        expect(g.dirX * g.planeX + g.dirY * g.planeY).toBeCloseTo(0)
+    })
+
+    it("accepts another enclosed area", () => {
+        const map = rooms()
+        map[5][4] = 1
+        const g = new Game(map, tiles, { x: 1, y: 1 }, 500, 300)
+        expect(g.reachable[4][2]).toBe(false)
+        g.setPlayer({ x: 4, y: 2 })
+        expect(g.pX).toBe(4.5)
+        expect(g.reachable[4][2]).toBe(true)
+    })
+
+    it("ignores positions in an open area", () => {
+        const warn = quiet()
+        const g = new Game(rooms(), tiles, { x: 1, y: 1 }, 500, 300)
+        g.setPlayer({ x: 4, y: 2 })
+        expect(g.pX).toBe(1.5)
+        expect(warn).toHaveBeenCalled()
+        warn.mockRestore()
+    })
+
+    it("ignores positions in walls or outside the map", () => {
+        const warn = quiet()
+        const g = new Game(rooms(), tiles, { x: 1, y: 1 }, 500, 300)
+        g.setPlayer({ x: 0, y: 0 })
+        g.setPlayer({ x: 3, y: 2 })
+        g.setPlayer({ x: -5, y: 2 })
+        g.setPlayer({ x: 1, y: 40 })
+        expect([g.pX, g.pY]).toEqual([1.5, 1.5])
+        expect(warn).toHaveBeenCalledTimes(4)
+        warn.mockRestore()
+    })
+})
+
 describe("sprites", () => {
     it("collects sprites centered in their cell", () => {
         const map = enclosed(5)
@@ -75,16 +137,42 @@ describe("sprites", () => {
     })
 })
 
-describe("joystick", () => {
+describe("inputs", () => {
     it("uses the configured speeds", () => {
         const g = create(enclosed(5))
         g.speed = 20
         g.rotSpeed = 4
-        g.joystickMove(0.5, -1)
-        g.joystickCamera(0.5)
+        g.move(0.5, -1)
+        g.turn(0.5)
         expect(g.right).toBe(10)
         expect(g.up).toBe(-20)
         expect(g.cameraL).toBe(2)
+    })
+
+    it("accumulates look movements until the next frame", () => {
+        const g = create(enclosed(5))
+        g.look(10, -4)
+        g.look(5, 2)
+        expect([g.movementX, g.movementY]).toEqual([15, -2])
+    })
+
+    it("keeps the deprecated joystick methods", () => {
+        const g = create(enclosed(5))
+        g.joystickMove(1, 1)
+        g.joystickCamera(-1)
+        expect([g.right, g.up, g.cameraL]).toEqual([g.speed, g.speed, -g.rotSpeed])
+    })
+})
+
+describe("getPlayer", () => {
+    it("returns the player in the same format as the player prop", () => {
+        for (const rotation of [0, 37, 90, -90, 179, -135]) {
+            const g = new Game(enclosed(5), tiles, { x: 2.25, y: 1.75, rotation }, 500, 300)
+            const p = g.getPlayer()
+            expect(p.x).toBeCloseTo(2.25)
+            expect(p.y).toBeCloseTo(1.75)
+            expect(p.rotation).toBeCloseTo(rotation)
+        }
     })
 })
 
@@ -134,6 +222,21 @@ describe("doors", () => {
         g.pY = 1.5
         run(g, 10)
         expect(g.doorStates[2][1]).toBe("open")
+    })
+
+    it("opens once with interact", () => {
+        const g = setup()
+        g.interact()
+        expect(g.doorStates[2][1]).toBe("opening")
+        run(g, 1)
+        expect(g.doors[2][1]).toBe(1)
+    })
+
+    it("ignores interact away from doors", () => {
+        const g = setup()
+        g.dirX = -1
+        g.interact()
+        expect(g.doorStates[2][1]).toBe("closed")
     })
 
     it("does not open without action", () => {

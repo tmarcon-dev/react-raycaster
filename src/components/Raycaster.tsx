@@ -1,10 +1,9 @@
-import { createContext, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import Game from "../classes/Game";
 import { PlayerType, RaycastType, Textures, Tiles } from "../types/RaycastTypes";
 import Canvas from "./Canvas";
 import { loadTexture } from "../functions/utils";
-
-const RaycasterContext = createContext<Game>(null!);
+import { GameContext, RegisterContext } from "./context";
 
 const createGame = (mapKey: string, tiles: Tiles, player: PlayerType, width: number, height: number) => {
     try {
@@ -14,12 +13,16 @@ const createGame = (mapKey: string, tiles: Tiles, player: PlayerType, width: num
     }
 }
 
+// Reported positions kept to recognize them in the player prop, about a second of movement
+const MAX_REPORTED = 60
+
 export default function Raycaster({
     map,
     tiles,
     player,
     width = 500,
     height = 300,
+    onPlayerChange,
     children,
     ...props
 }: RaycastType) {
@@ -31,7 +34,7 @@ export default function Raycaster({
     const texturesKey = useMemo(() => JSON.stringify(Object.entries(tiles)
         .map(([id, t]) => [id, t.src])), [tiles])
 
-    // A new game is only created when the map or tiles change, player and resolution are initial values
+    // A new game is only created when the map or tiles change, player and resolution changes are applied to the current game
     const gameKey = mapKey + tilesKey
     const [current, setCurrent] = useState(() => ({
         key: gameKey,
@@ -43,6 +46,42 @@ export default function Raycaster({
         game = createGame(mapKey, tiles, player, width, height)
         setCurrent({ key: gameKey, game })
     }
+
+    // Shares the game with the RaycasterProvider around, if any
+    const register = useContext(RegisterContext)
+    const [owner] = useState(() => ({}))
+    useEffect(() => {
+        if (!register || !game) return
+        register(owner, game)
+        return () => register(owner, null)
+    }, [register, owner, game])
+
+    // Positions reported to onPlayerChange and not yet seen back in the player prop, oldest first
+    // React applies them a few frames later, the player has moved again in the meantime
+    const reported = useRef<PlayerType[]>([])
+    const onChange = useRef(onPlayerChange)
+    useLayoutEffect(() => {
+        onChange.current = onPlayerChange
+    })
+    const report = useCallback((p: PlayerType) => {
+        // Bounded in case the parent never stores the reported positions
+        if (reported.current.push(p) > MAX_REPORTED) reported.current.shift()
+        onChange.current?.(p)
+    }, [])
+
+    // Changing the player position or rotation moves the player without resetting the game
+    // Values coming back from onPlayerChange are skipped: the player has moved again since, applying them would pull it back
+    useEffect(() => {
+        const echo = reported.current.findIndex(r =>
+            r.x === player.x && r.y === player.y && r.rotation === player.rotation)
+        if (echo >= 0) {
+            // Older reports can no longer come back
+            reported.current.splice(0, echo + 1)
+            return
+        }
+        reported.current = []
+        game?.setPlayer({ x: player.x, y: player.y, rotation: player.rotation })
+    }, [game, player.x, player.y, player.rotation])
 
     // Resolution changes keep the current game state
     useEffect(() => {
@@ -65,13 +104,10 @@ export default function Raycaster({
     if (!game) return null
 
     return (
-        <RaycasterContext.Provider value={game}>
-            <Canvas g={game} w={width} h={height} textures={textures} {...props} />
+        <GameContext.Provider value={game}>
+            <Canvas g={game} w={width} h={height} textures={textures} onPlayerChange={onPlayerChange && report} {...props} />
 
-            {children &&
-                <RaycasterContext.Consumer>
-                    {children}
-                </RaycasterContext.Consumer>}
-        </RaycasterContext.Provider>
+            {children?.(game)}
+        </GameContext.Provider>
     )
 }
