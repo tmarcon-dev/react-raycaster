@@ -14,7 +14,8 @@ export default class Game {
         this.tiles = tiles
 
         this.reachable = map.map(row => row.map(() => false))
-        this.checkMap(player.x, player.y)
+        // The player stands in the cell its position rounds to, as in setPlayer
+        this.checkMap(Math.floor(player.x + .5), Math.floor(player.y + .5))
 
         this.pX = player.x + .5
         this.pY = player.y + .5
@@ -37,14 +38,50 @@ export default class Game {
         }))
     }
 
-    joystickMove = (x: number, y: number) => {
+    // Movement input, between -1 and 1: x strafes right, y moves forward
+    // The game loop applies it every frame with collisions, until it is set back to 0
+    move = (x: number, y: number) => {
         this.up = y * this.speed
         this.right = x * this.speed
     }
 
-    joystickCamera = (x: number) => {
+    // Rotation input, between -1 and 1: positive values turn right
+    turn = (x: number) => {
         this.cameraL = x * this.rotSpeed
     }
+
+    // Camera input in pixels of mouse movement, same sensitivity as the built-in mouse controls
+    // x turns right, y looks down, it is applied once on the next frame
+    look = (x: number, y: number) => {
+        this.movementX += x
+        this.movementY += y
+    }
+
+    // Opens the doors in front of the player or in its cell, like the action key
+    interact = () => {
+        const cells = [
+            [Math.floor(this.pX + this.dirX), Math.floor(this.pY + this.dirY)],
+            [Math.floor(this.pX + this.dirX * 2), Math.floor(this.pY + this.dirY * 2)],
+            [Math.floor(this.pX), Math.floor(this.pY)],
+        ]
+
+        cells.forEach(([x, y]) => {
+            if (this.getMapType(x, y) === "door") this.openDoor(x, y)
+        })
+    }
+
+    /** @deprecated Use `move` */
+    joystickMove = (x: number, y: number) => this.move(x, y)
+
+    /** @deprecated Use `turn` */
+    joystickCamera = (x: number) => this.turn(x)
+
+    // Current position and rotation, in the same format as the `player` prop
+    getPlayer = (): PlayerType => ({
+        x: this.pX - .5,
+        y: this.pY - .5,
+        rotation: Math.atan2(this.dirY, -this.dirX) * 180 / Math.PI,
+    })
 
     // Moves the player, used to control the player from outside the component
     // Positions outside of the map or in an area not enclosed by walls are ignored, as rays could not hit a wall
@@ -126,18 +163,9 @@ export default class Game {
         else return null
     }
 
+    // Holding the action key interacts every frame
     checkDoor = () => {
-        if (!this.action) return
-
-        const cells = [
-            [Math.floor(this.pX + this.dirX), Math.floor(this.pY + this.dirY)],
-            [Math.floor(this.pX + this.dirX * 2), Math.floor(this.pY + this.dirY * 2)],
-            [Math.floor(this.pX), Math.floor(this.pY)],
-        ]
-
-        cells.forEach(([x, y]) => {
-            if (this.getMapType(x, y) === "door") this.openDoor(x, y)
-        })
+        if (this.action) this.interact()
     }
 
     openDoor = (x: number, y: number) => {

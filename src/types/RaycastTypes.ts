@@ -44,7 +44,24 @@ export interface RaycastType extends Omit<CanvasHTMLAttributes<HTMLCanvasElement
     inputs?: Inputs,
     mouse?: boolean,
     controls?: boolean,
+    onPlayerChange?: (player: PlayerType) => void,
     children?: (value: Game) => ReactNode
+}
+
+export type MinimapColors = {
+    floor?: string,
+    player?: string,
+    view?: string,
+    // Wall edges facing open cells, keeps walls visible when their color is close to the floor
+    outline?: string,
+    // Tile colors by tile id, the average color of the tile texture by default
+    tiles?: { [key: number]: string },
+}
+
+export interface MinimapProps extends Omit<CanvasHTMLAttributes<HTMLCanvasElement>, "children"> {
+    cellSize?: number,
+    colors?: MinimapColors,
+    onCellClick?: (x: number, y: number) => void,
 }
 
 // Private types

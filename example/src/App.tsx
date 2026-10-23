@@ -1,51 +1,48 @@
 import './App.css'
 
-import { useMemo, useState } from 'react';
-import { FaAdjust, FaRunning } from "react-icons/fa";
-import { FaArrowDown19 } from 'react-icons/fa6';
+import { useState } from 'react';
 
 import oakPlanks from "./assets/tex/oak_planks.png"
 import skybox from "./assets/tex/cubemap.png"
 
-import Raycaster from '../../src';
+import Raycaster, { RaycasterProvider } from '../../src';
 import { PlayerType } from '../../src/types/RaycastTypes';
 import { map } from './assets/map';
 import { tiles } from './assets/tiles';
 import { Joystick } from 'react-joystick-component';
+import { Description, Footer, Panel, ViewOverlay } from './Layout';
+import { useSettings } from './settings';
+
+const inputs = {
+  north: "KeyW",
+  east: "KeyD",
+  south: "KeyS",
+  west: "KeyA",
+  action: "Space",
+  cameraL: "KeyQ",
+  cameraR: "KeyE",
+}
 
 function App() {
-  const [shading, setShading] = useState(true)
-  const [bobbing, setBobbing] = useState(true)
-  const [showFPS, setShowFPS] = useState(false)
+  const [settings, set] = useSettings()
 
-  const player = useMemo((): PlayerType => ({
-    x: 15,
-    y: 8,
-  }), [])
-
-  const inputs = {
-    north: "KeyW",
-    east: "KeyD",
-    south: "KeyS",
-    west: "KeyA",
-    action: "Space",
-    cameraL: "KeyQ",
-    cameraR: "KeyE",
-  }
+  // Kept in sync by onPlayerChange, for the position text and so teleports always apply
+  const [player, setPlayer] = useState<PlayerType>({ x: 15, y: 8 })
 
   return (
-    <div>
+    <RaycasterProvider>
       <Raycaster
         mouse
         map={map}
         tiles={tiles}
         player={player}
-        showFPS={showFPS}
+        onPlayerChange={setPlayer}
+        showFPS={settings.showFPS}
         floor={oakPlanks}
         skybox={skybox}
-        shading={shading}
+        shading={settings.shading}
         inputs={inputs}
-        bobbing={bobbing}
+        bobbing={settings.bobbing}
         style={{
           width: "100%",
           height: "100%",
@@ -60,59 +57,34 @@ function App() {
               size={100}
               baseColor="grey"
               stickColor="lightgrey"
-              move={(e) => g.joystickMove(e.x ?? 0, e.y ?? 0)}
-              stop={() => g.joystickMove(0, 0)} />
+              move={(e) => g.move(e.x ?? 0, e.y ?? 0)}
+              stop={() => g.move(0, 0)} />
 
             <Joystick
               size={100}
               baseColor="grey"
               stickColor="lightgrey"
-              move={(e) => g.joystickCamera(e.x ?? 0)}
-              stop={() => g.joystickCamera(0)} />
+              move={(e) => g.turn(e.x ?? 0)}
+              stop={() => g.turn(0)} />
           </div>
         }
       </Raycaster>
 
-      <form>
-        <div>
-          <label htmlFor="shading"><FaAdjust /></label>
-          <input
-            type="checkbox"
-            checked={shading}
-            onChange={() => setShading(!shading)}
-            id="shading"
-            aria-label="Shading"
-          />
-        </div>
+      <ViewOverlay
+        keyboard="WASD to move, Q E or the mouse to turn (click the view, Esc to release), Space to open doors, click the map to teleport"
+        touch="Left stick to move, right stick to turn, tap the map to teleport"
+        onTeleport={(x, y) => setPlayer(p => ({ ...p, x, y }))}
+      />
 
-        <div>
-          <label htmlFor="bobbing"><FaRunning /></label>
-          <input
-            type="checkbox"
-            checked={bobbing}
-            onChange={() => setBobbing(!bobbing)}
-            id="bobbing"
-            aria-label="Bobbing"
-          />
-        </div>
+      <Description>
+        Built-in controls: the library handles the keyboard, the mouse and collisions, the joysticks use the game API.
+        The minimap gets the game from RaycasterProvider.
+      </Description>
 
-        <div>
-          <label htmlFor="showFPS"><FaArrowDown19 /></label>
-          <input
-            type="checkbox"
-            checked={showFPS}
-            onChange={() => setShowFPS(!showFPS)}
-            id="showFPS"
-            aria-label="Show FPS"
-          />
-        </div>
-      </form>
+      <Panel settings={settings} set={set} player={player} />
 
-      <footer>
-        <p>© 2024 <a href="https://thais-marcon.com">Thaïs Marcon</a></p>
-        <p>Github: <a href="https://github.com/tmarcon-dev/react-raycaster">react-raycaster</a> - <a href="render-only.html">Render only demo</a></p>
-      </footer>
-    </div>
+      <Footer href="custom-controls.html" label="Custom controls demo" />
+    </RaycasterProvider>
   )
 }
 

@@ -9,13 +9,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- `controls` prop to disable the built-in keyboard and mouse controls, to use the component as a renderer only ([#49](https://github.com/tmarcon-dev/react-raycaster/issues/49))
+- `controls` prop to disable the built-in keyboard and mouse controls ([#49](https://github.com/tmarcon-dev/react-raycaster/issues/49))
+- `onPlayerChange` prop, called with the new position when the player moves
+- `move(x, y)`, `turn(x)`, `look(x, y)`, `interact()` and `getPlayer()` in the game context, to drive the player with custom controls
+- `Minimap` component: top-down view with the player, its field of view and the doors, colors from the tile textures and `onCellClick`
+- `RaycasterProvider` and `useRaycaster()`, to use the game from components outside of the `Raycaster` children
 - `openDoor(x, y)` documented in the game context
-- [Render only demo](https://tmarcon-dev.github.io/react-raycaster/render-only.html), with movements, collisions and a minimap handled by the parent component
+- [Custom controls demo](https://tmarcon-dev.github.io/react-raycaster/custom-controls.html), with the keyboard and mouse handled by the page and a clickable minimap
 
 ### Changed
 
 - Changing the `player` values moves and rotates the player, without resetting the game
+
+- The FPS counter is drawn in the top right corner, the top left one is left free for overlays like a minimap
+
+### Deprecated
+
+- `joystickMove` and `joystickCamera`, use `move` and `turn`
+
+### Fixed
+
+- Initial player positions with decimals no longer crash
+- Mouse camera jumps since 0.2.0, which applies every mouse movement instead of the last one of each frame: the pointer is locked with raw mouse input when the browser supports it, and the first movement after locking is ignored. `lockPointer(element)` is exported for custom controls
+- Keyboard controls no longer move the player while typing in a form field, nor take Space and Enter from focused buttons, links and checkboxes. `isFormKey(event)` is exported for custom controls
 
 ## [0.2.0] - 2026-10-09
 

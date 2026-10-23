@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef } from "react";
 import { CanvasType, SortedSprite, Texture } from "../types/RaycastTypes";
-import { isColliding, loadTexture, shadePixel } from "../functions/utils";
+import { isColliding, isFormKey, loadTexture, lockPointer, shadePixel } from "../functions/utils";
 
 const DEFAULT_INPUTS = {
     north: "ArrowUp",
@@ -31,15 +31,16 @@ export default function Canvas({
     textures,
     mouse = false,
     controls = true,
+    onPlayerChange,
     style,
     ...canvasProps
 }: CanvasType) {
     const canvasRef = useRef<HTMLCanvasElement | null>(null)
 
     // Latest props, read by the game loop and event handlers without restarting them
-    const props = useRef({ inputs, shading, showFPS, bobbing, w, h, speed, rotSpeed })
+    const props = useRef({ inputs, shading, showFPS, bobbing, w, h, speed, rotSpeed, onPlayerChange })
     useLayoutEffect(() => {
-        props.current = { inputs, shading, showFPS, bobbing, w, h, speed, rotSpeed }
+        props.current = { inputs, shading, showFPS, bobbing, w, h, speed, rotSpeed, onPlayerChange }
     })
 
     const skyboxImage = useRef<HTMLImageElement | undefined>(undefined)
@@ -67,7 +68,7 @@ export default function Canvas({
         let frame = 0
 
         const loop = (timestamp: DOMHighResTimeStamp) => {
-            const { shading, showFPS, bobbing, w, h, speed, rotSpeed } = props.current
+            const { shading, showFPS, bobbing, w, h, speed, rotSpeed, onPlayerChange } = props.current
             const middle = h * 0.5;
 
             // Buffers follow the canvas resolution
@@ -81,6 +82,8 @@ export default function Canvas({
                 wallBottom = new Int32Array(w)
                 ctx.fillStyle = "red"
                 ctx.font = "24px Arial"
+                // FPS in the top right corner, the top left one is often used by overlays like a minimap
+                ctx.textAlign = "right"
                 ctx.imageSmoothingEnabled = false;
             }
 
@@ -94,6 +97,9 @@ export default function Canvas({
 
             g.speed = speed
             g.rotSpeed = rotSpeed
+
+            // Position before this frame's movements, to report changes
+            const { pX, pY, dirX, dirY } = g
 
             // Calculate new movements
             const movement = (g.up + g.down) * delta
@@ -154,6 +160,10 @@ export default function Canvas({
                 g.planeY = oldplaneX * Math.sin(rotation) + g.planeY * Math.cos(rotation);
             }
 
+            // Only movements made by the game loop are reported, not the ones coming from the player prop
+            if (onPlayerChange && (g.pX !== pX || g.pY !== pY || g.dirX !== dirX || g.dirY !== dirY))
+                onPlayerChange(g.getPlayer())
+
             // Door interactions
             g.checkDoor()
             g.updateDoors(delta)
@@ -172,7 +182,7 @@ export default function Canvas({
 
             spritecast(w, h, middle);
 
-            if (showFPS) ctx.fillText(fps.toString(), w / 50, h / 15 + 12);
+            if (showFPS) ctx.fillText(fps.toString(), w - w / 50, h / 15 + 12);
 
             // Get next frame
             frame = requestAnimationFrame(loop)
@@ -493,19 +503,25 @@ export default function Canvas({
         const canvas = canvasRef.current
         if (!mouse || !controls || !canvas) return
 
+        // The first movement after locking or unlocking the pointer can include the jump of the cursor
+        let skip = false
+        const onLockChange = () => skip = true
+
         // Movements are accumulated until the next frame consumes them
         const moveCamera = (e: MouseEvent) => {
-            g.movementX += e.movementX
-            g.movementY += e.movementY
+            if (skip) skip = false
+            else g.look(e.movementX, e.movementY)
         }
-        const pointerLock = () => canvas.requestPointerLock();
+        const pointerLock = () => lockPointer(canvas)
 
         canvas.addEventListener("mousemove", moveCamera)
         canvas.addEventListener("click", pointerLock);
+        document.addEventListener("pointerlockchange", onLockChange)
 
         return () => {
             canvas.removeEventListener("mousemove", moveCamera)
             canvas.removeEventListener("click", pointerLock);
+            document.removeEventListener("pointerlockchange", onLockChange)
         }
     }, [g, mouse, controls])
 
@@ -544,6 +560,10 @@ export default function Canvas({
         if (!controls) return
 
         const onKeyDown = (e: KeyboardEvent) => {
+            // Typing in a field or pressing a focused button does not move the player
+            // Key releases are always handled, so a key held before focusing a field does not stay pressed
+            if (isFormKey(e)) return
+
             const { inputs, speed, rotSpeed } = props.current
             if (inputs.north === e.code) g.up = speed
             else if (inputs.east === e.code) g.right = speed

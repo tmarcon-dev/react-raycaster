@@ -13,7 +13,7 @@ export default defineConfig({
     rolldownOptions: {
       input: {
         main: resolve(import.meta.dirname, "index.html"),
-        renderOnly: resolve(import.meta.dirname, "render-only.html"),
+        customControls: resolve(import.meta.dirname, "custom-controls.html"),
       },
     },
   },

@@ -137,16 +137,42 @@ describe("sprites", () => {
     })
 })
 
-describe("joystick", () => {
+describe("inputs", () => {
     it("uses the configured speeds", () => {
         const g = create(enclosed(5))
         g.speed = 20
         g.rotSpeed = 4
-        g.joystickMove(0.5, -1)
-        g.joystickCamera(0.5)
+        g.move(0.5, -1)
+        g.turn(0.5)
         expect(g.right).toBe(10)
         expect(g.up).toBe(-20)
         expect(g.cameraL).toBe(2)
+    })
+
+    it("accumulates look movements until the next frame", () => {
+        const g = create(enclosed(5))
+        g.look(10, -4)
+        g.look(5, 2)
+        expect([g.movementX, g.movementY]).toEqual([15, -2])
+    })
+
+    it("keeps the deprecated joystick methods", () => {
+        const g = create(enclosed(5))
+        g.joystickMove(1, 1)
+        g.joystickCamera(-1)
+        expect([g.right, g.up, g.cameraL]).toEqual([g.speed, g.speed, -g.rotSpeed])
+    })
+})
+
+describe("getPlayer", () => {
+    it("returns the player in the same format as the player prop", () => {
+        for (const rotation of [0, 37, 90, -90, 179, -135]) {
+            const g = new Game(enclosed(5), tiles, { x: 2.25, y: 1.75, rotation }, 500, 300)
+            const p = g.getPlayer()
+            expect(p.x).toBeCloseTo(2.25)
+            expect(p.y).toBeCloseTo(1.75)
+            expect(p.rotation).toBeCloseTo(rotation)
+        }
     })
 })
 
@@ -196,6 +222,21 @@ describe("doors", () => {
         g.pY = 1.5
         run(g, 10)
         expect(g.doorStates[2][1]).toBe("open")
+    })
+
+    it("opens once with interact", () => {
+        const g = setup()
+        g.interact()
+        expect(g.doorStates[2][1]).toBe("opening")
+        run(g, 1)
+        expect(g.doors[2][1]).toBe(1)
+    })
+
+    it("ignores interact away from doors", () => {
+        const g = setup()
+        g.dirX = -1
+        g.interact()
+        expect(g.doorStates[2][1]).toBe("closed")
     })
 
     it("does not open without action", () => {
