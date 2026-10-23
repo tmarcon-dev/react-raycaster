@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-10-23
+
 ### Added
 
 - `controls` prop to disable the built-in keyboard and mouse controls ([#49](https://github.com/tmarcon-dev/react-raycaster/issues/49))
@@ -20,7 +22,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Changing the `player` values moves and rotates the player, without resetting the game
-
 - The FPS counter is drawn in the top right corner, the top left one is left free for overlays like a minimap
 
 ### Deprecated
@@ -130,7 +131,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial release
 
-[Unreleased]: https://github.com/tmarcon-dev/react-raycaster/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/tmarcon-dev/react-raycaster/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/tmarcon-dev/react-raycaster/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/tmarcon-dev/react-raycaster/compare/v0.1.1...v0.2.0
 [0.1.1]: https://github.com/tmarcon-dev/react-raycaster/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/tmarcon-dev/react-raycaster/compare/v0.0.4...v0.1.0
